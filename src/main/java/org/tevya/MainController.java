@@ -17,24 +17,36 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.logging.Logger;
 
+/**
+ * The main (only) controller.  This handles all requests.
+ */
 @Controller
 @EnableAutoConfiguration
 @Import(RepositoryConfig.class)
 public class MainController {
 
-    @Autowired
-    protected LinkDefinitionRepository  linkDefinitionRepository;
-
+    /**
+     * The link definition generator
+     */
     @Autowired
     LinkGenerator linkGenerator;
 
+    /**
+     * The link definition repository
+     */
     @Autowired
     LinkDefinitionRepository repository;
 
+    /**
+     * An access key used to limit access to the service to those who can ssh into the server.
+     */
     private String accessKey;
 
     Logger  logger = Logger.getLogger(MainController.class.getName());
 
+    /**
+     * URL validator for checking syntax
+     */
     private UrlValidator validator;
 
     @RequestMapping("/")
@@ -49,17 +61,30 @@ public class MainController {
 
         String[] acceptedSchemes = {"http","https"};
         validator = new UrlValidator(acceptedSchemes);
+
+        // Now generate a random value for the access key.  Anyone wanting to create a link
+        // will need access to the log file on the server to discover this key. This is
+        // being done since all the code and configuration files are publicly visible.
         int keyValue = rand.nextInt(1000000) + 1;
         this.accessKey = Integer.toString(keyValue,36);
         logger.info(String.format("********** Access Key is k%s **********",accessKey));
         repository.initialize();
     }
 
-
+    /**
+     * Starting point for the image. Initializes Spring.
+     * @param args
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
         SpringApplication.run(MainController.class, args);
     }
 
+    /**
+     * Reset the repository by deleting all current definitions.
+     * @param accessKey
+     * @param response
+     */
     @RequestMapping(value="/k{accessKey}/lnk", method=RequestMethod.DELETE)
     public void resetRepository (
             @PathVariable String accessKey,
@@ -72,6 +97,17 @@ public class MainController {
     }
 
 
+    /**
+     * Create a link definition.
+     * @param accessKey   privately known key written to the server's log
+     * @param alias       optional alias name
+     * @param request     The body of the request which lists the domain and the target URL.
+     *                    It lists the domain since the server cannot always know what domain
+     *                    is being used by the originator of the request.
+     * @param response    Allows setting error codes for feedback.
+     * @return  The simple string of the link created.
+     * @throws IOException
+     */
     @RequestMapping(value="/k{accessKey}/lnk", method=RequestMethod.POST)
     public  @ResponseBody String create(
             @PathVariable String accessKey,
@@ -114,6 +150,12 @@ public class MainController {
         }
     }
 
+    /**
+     * If the key is known redirect the user appropriately.
+     * @param key  key in the repository
+     * @param response   used to return error codes (e.g. 404)
+     * @throws IOException
+     */
     @RequestMapping(value="/l/{key}")
     public void redirectByKey(@PathVariable String key,
                               HttpServletResponse response) throws IOException {
@@ -121,12 +163,22 @@ public class MainController {
         redirect(response, ld == null ? null : ld.getTargetUrl());
     }
 
+    /**
+     * If the key is known remove it from the repository
+     * @param key  key in the repository
+     * @throws IOException
+     */
     @RequestMapping(value="/l/{key}", method=RequestMethod.DELETE)
-    public void deleteByKey(@PathVariable String key,
-                            HttpServletResponse response) throws IOException {
+    public void deleteByKey(@PathVariable String key) throws IOException {
             repository.deleteByKey(key);
     }
 
+    /**
+     * If the alias is known redirect the user appropriately.
+     * @param alias  alias in the repository
+     * @param response   used to return error codes (e.g. 404)
+     * @throws IOException
+     */
     @RequestMapping(value="/a/{alias}")
     public void redirectByAlias(@PathVariable String alias,
                                 HttpServletResponse response) throws IOException {
@@ -134,9 +186,13 @@ public class MainController {
         redirect(response, ld == null ? null : ld.getTargetUrl());
     }
 
+    /**
+     * If the alias is known remove it from the repository
+     * @param alias alias in the repository
+     * @throws IOException
+     */
     @RequestMapping(value="/a/{alias}", method=RequestMethod.DELETE)
-    public void deleteByAlias(@PathVariable String alias,
-                            HttpServletResponse response) throws IOException {
+    public void deleteByAlias(@PathVariable String alias) throws IOException {
             repository.deleteByAlias(alias);
     }
 

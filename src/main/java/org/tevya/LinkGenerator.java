@@ -8,13 +8,19 @@ import java.util.Random;
 import java.util.logging.Logger;
 
 /**
- * Created by Eric on 9/14/2015.
+ * Holder of logic to create new key values
  */
 @Component
 public class LinkGenerator {
 
     private static final int minimum = 1;
-    private static final int baseValue = 36;
+    private static final int baseValue = 36; // use largest practical base to minimize key length in URL.
+
+    /**
+     * The maximum is initialized low and only expanded as collisions
+     * indicate necessary.  This keeps early key values "tiny" without
+     * limiting the overall key domain.
+     */
     private static int maximum = Integer.parseInt("100", baseValue);
 
     Logger logger = Logger.getLogger(LinkGenerator.class.getName());
@@ -24,6 +30,7 @@ public class LinkGenerator {
 
     /**
      * Returns a key that does not exist in the repository.
+     * The key returned is random so that users cannot predict others' mappings.
      * @param repo  the repository to check against.
      * @return alias key value
      * @throws Exception if cannot find a unique key (after ~3 billion !)
@@ -36,7 +43,7 @@ public class LinkGenerator {
                     return candidate;
                 }
             }
-            maximum = 2*maximum;
+            maximum = 2*maximum;  // expand the size of the key name space.
         }
         // We have run out of values.  This should never happen.
         // Now go through the values until we find a gap.

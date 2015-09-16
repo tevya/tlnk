@@ -1,11 +1,11 @@
 package org.tevya.model;
 
 /**
- * Created by Eric on 9/14/2015.
+ * Body of a creation request (POST)
  */
 public class CreationRequest {
-    private String serviceDomain;
-    private String url;
+    private String serviceDomain;  // domain caller used to access the service
+    private String url;            // URL to redirect to.
 
     public String getServiceDomain() {
         return serviceDomain;

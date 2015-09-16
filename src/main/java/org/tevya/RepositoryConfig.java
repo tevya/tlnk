@@ -6,7 +6,7 @@ import org.tevya.repo.LinkDefinitionFlatFileRepository;
 import org.tevya.repo.LinkDefinitionRepository;
 
 /**
- * Created by Eric on 9/14/2015.
+ * Holder of configuration bean definitions.
  */
 @Configuration
 public class RepositoryConfig {
