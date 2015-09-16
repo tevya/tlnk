@@ -1,10 +1,8 @@
-package org.tevya.org.tevya.repo;
+package org.tevya.repo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
-import org.tevya.org.tevya.model.LinkDefinition;
+import org.tevya.model.LinkDefinition;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,12 +11,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * Created by Eric on 9/13/2015.
+ * Flat file implementation of a LinkDefinitionRepository
  */
 public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepository{
 
@@ -146,7 +143,7 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
         {
             synchronized (this) {
                 for (LinkDefinition ld : currentLinkDefinitions.definitions) {
-                    if (ld.getKey() == key) {
+                    if (ld.getKey().equals(key)) {
                         currentLinkDefinitions.definitions.remove(ld);
                         break;
                     }
@@ -167,7 +164,7 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
         {
             synchronized (this) {
                 for (LinkDefinition ld : currentLinkDefinitions.definitions) {
-                    if (ld.getAlias() == alias) {
+                    if (ld.getAlias().equals(alias)) {
                         currentLinkDefinitions.definitions.remove(ld);
                         break;
                     }

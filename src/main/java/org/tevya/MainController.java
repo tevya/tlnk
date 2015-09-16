@@ -7,9 +7,9 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.tevya.org.tevya.model.CreationRequest;
-import org.tevya.org.tevya.model.LinkDefinition;
-import org.tevya.org.tevya.repo.LinkDefinitionRepository;
+import org.tevya.model.CreationRequest;
+import org.tevya.model.LinkDefinition;
+import org.tevya.repo.LinkDefinitionRepository;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
@@ -101,8 +101,7 @@ public class MainController {
             if (repository.add(linkDefinition)) {
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 response.setContentType("text/plain");
-                String tinyLink = String.format("http://%s%s", request.getServiceDomain(), formatLink(createAlias, linkDefinition));
-                return tinyLink;
+                return String.format("http://%s%s", request.getServiceDomain(), formatLink(createAlias, linkDefinition));
             }
             else {
                 response.sendError(HttpServletResponse.SC_CONFLICT,String.format("%s already exists", createAlias ? "Alias" : "Link"));

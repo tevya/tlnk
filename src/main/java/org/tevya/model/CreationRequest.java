@@ -1,4 +1,4 @@
-package org.tevya.org.tevya.model;
+package org.tevya.model;
 
 /**
  * Created by Eric on 9/14/2015.

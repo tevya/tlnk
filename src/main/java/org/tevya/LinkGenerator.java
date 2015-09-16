@@ -2,7 +2,7 @@ package org.tevya;
 
 
 import org.springframework.stereotype.Component;
-import org.tevya.org.tevya.repo.LinkDefinitionRepository;
+import org.tevya.repo.LinkDefinitionRepository;
 
 import java.util.Random;
 import java.util.logging.Logger;
