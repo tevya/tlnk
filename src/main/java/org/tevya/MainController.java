@@ -156,7 +156,7 @@ public class MainController {
      * @param response   used to return error codes (e.g. 404)
      * @throws IOException
      */
-    @RequestMapping(value="/l/{key}")
+    @RequestMapping(value="/l/{key}", method=RequestMethod.GET)
     public void redirectByKey(@PathVariable String key,
                               HttpServletResponse response) throws IOException {
         LinkDefinition ld = repository.getByKey(key);
@@ -169,7 +169,8 @@ public class MainController {
      * @throws IOException
      */
     @RequestMapping(value="/l/{key}", method=RequestMethod.DELETE)
-    public void deleteByKey(@PathVariable String key) throws IOException {
+    public void deleteByKey(@PathVariable String key,
+                            HttpServletResponse response) throws IOException {
             repository.deleteByKey(key);
     }
 
@@ -179,7 +180,7 @@ public class MainController {
      * @param response   used to return error codes (e.g. 404)
      * @throws IOException
      */
-    @RequestMapping(value="/a/{alias}")
+    @RequestMapping(value="/a/{alias}", method=RequestMethod.GET)
     public void redirectByAlias(@PathVariable String alias,
                                 HttpServletResponse response) throws IOException {
         LinkDefinition ld = repository.getByAlias(alias);
@@ -192,7 +193,8 @@ public class MainController {
      * @throws IOException
      */
     @RequestMapping(value="/a/{alias}", method=RequestMethod.DELETE)
-    public void deleteByAlias(@PathVariable String alias) throws IOException {
+    public void deleteByAlias(@PathVariable String alias,
+                              HttpServletResponse response) throws IOException {
             repository.deleteByAlias(alias);
     }
 

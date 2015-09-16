@@ -55,7 +55,6 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
     private LinkDefinitions currentLinkDefinitions;
 
     public LinkDefinitionFlatFileRepository() throws Exception {
-        //TODO: Check that TLNK_DATA is defined.
         String dataDirectory = System.getenv("TLNK_DATA");
         if (dataDirectory == null || !Files.isDirectory(Paths.get(dataDirectory)))
         {
@@ -101,6 +100,11 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
                 currentLinkDefinitions = new LinkDefinitions();
             }
         }
+    }
+
+    private void update() throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.writeValue(new File(backingFilePath.toString()), currentLinkDefinitions);
     }
 
     public boolean aliasExists(String alias) {
@@ -149,6 +153,7 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
                     }
                 }
                 try {
+                    update();
                     initialize();
                 } catch (Exception e) {
                     logger.warning(String.format("Reinitialization failed: %s", e));
@@ -170,6 +175,7 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
                     }
                 }
                 try {
+                    update();
                     initialize();
                 } catch (Exception e) {
                     logger.warning(String.format("Reinitialization failed: %s", e));
