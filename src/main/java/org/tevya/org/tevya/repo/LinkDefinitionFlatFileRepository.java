@@ -114,7 +114,7 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
         return knownKeyLinks.containsKey(key);
     }
 
-    public synchronized boolean save(LinkDefinition linkDefinition) throws Exception {
+    public synchronized boolean add(LinkDefinition linkDefinition) throws Exception {
         if (linkDefinition.getAlias() != null && aliasExists(linkDefinition.getAlias()))
         {
             return false; // duplicate alias.
@@ -135,7 +135,7 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
             initialize();
             return true;
         } catch (IOException e) {
-            logger.severe(String.format("Cannot save LinkDefinition for %s.  Exception: %s", linkDefinition.getTargetUrl(), e));
+            logger.severe(String.format("Cannot add LinkDefinition for %s.  Exception: %s", linkDefinition.getTargetUrl(), e));
             currentLinkDefinitions.definitions.remove(currentLinkDefinitions.definitions.size());
             return false;
         }

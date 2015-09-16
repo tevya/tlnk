@@ -98,7 +98,7 @@ public class MainController {
             linkDefinition.setKey(newKey);
             linkDefinition.setAlias(createAlias ? alias.toLowerCase() : null);
             linkDefinition.setTargetUrl(request.getUrl());
-            if (repository.save(linkDefinition)) {
+            if (repository.add(linkDefinition)) {
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 response.setContentType("text/plain");
                 String tinyLink = String.format("http://%s%s", request.getServiceDomain(), formatLink(createAlias, linkDefinition));
