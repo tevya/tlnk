@@ -22,8 +22,7 @@ URL: `http://12.23.45.67/kfe8w/lnk
 VERB:  POST
 BODY: 
 ```
-{ "serviceDomain": "http://12.23.45.67",
-"url": "http://news.google.com" }
+{ "serviceDomain": "12.23.45.67", "url": "http://news.google.com" }
 ```
 
 Creating specific alias:
@@ -32,8 +31,7 @@ URL: `http://12.23.45.67/kf46a/lnk?alias=goognews`
 VERB:  POST
 BODY: 
 ```
-{ "serviceDomain": "http://12.23.45.67",
-"url": "http://news.google.com" }
+{ "serviceDomain": "12.23.45.67", "url": "http://news.google.com" }
 ```
 
 ### To follow a link just GET the URL  (e.g. from a browser)
