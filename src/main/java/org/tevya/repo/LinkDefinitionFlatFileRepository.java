@@ -20,14 +20,8 @@ import java.util.logging.Logger;
 public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepository{
 
     /**
-     * Constructor for unit testing.
-     * @param testContents  JSON-formatted link definitions.
+     * This inner class exists primarily for serializing and deserializing link definitions.
      */
-    public LinkDefinitionFlatFileRepository(String testContents) {
-        this.testContents = testContents;
-        this.backingFilePath = null;
-    }
-
     public static class LinkDefinitions {
         ArrayList<LinkDefinition>  definitions;
 
@@ -44,15 +38,16 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
         }
     }
 
+    /**
+     * The location of the backing file.
+     */
     private Path  backingFilePath;
-    private String testContents;
 
     static private Logger logger = Logger.getLogger(LinkDefinitionFlatFileRepository.class.getName());
 
+    // Organized into maps for faster lookup.
     private Map<String,LinkDefinition> knownKeyLinks = new HashMap<String, LinkDefinition>();
     private Map<String,LinkDefinition> knownAliasLinks = new HashMap<String, LinkDefinition>();
-
-    private LinkDefinitions currentLinkDefinitions;
 
     public LinkDefinitionFlatFileRepository() throws Exception {
         String dataDirectory = System.getenv("TLNK_DATA");
@@ -64,8 +59,10 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
     }
 
     private void ingestDefinitions(LinkDefinitions defSet) {
+        knownAliasLinks.clear();
+        knownKeyLinks.clear();
         for (LinkDefinition ld : defSet.definitions){
-            if (StringUtils.isNoneBlank(ld.getAlias())){
+            if (StringUtils.isNotEmpty(ld.getAlias())){
                 knownAliasLinks.put(ld.getAlias(),ld);
             } else {
                 knownKeyLinks.put(ld.getKey(),ld);
@@ -73,38 +70,49 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
         }
     }
 
+    /**
+     * Initialize from the disk file.
+     *
+     * @throws Exception
+     */
     public synchronized void initialize() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
-        if (StringUtils.isNotEmpty(this.testContents)) {
-            currentLinkDefinitions = mapper.readValue(this.testContents, LinkDefinitions.class);
-            ingestDefinitions(currentLinkDefinitions);
-            return;
-        }
-
+        LinkDefinitions linkSet;
         if (Files.notExists(backingFilePath)){
             // create and initialize the file with an empty set of link definitions.
             Path actualPath = Files.createFile(backingFilePath);
-            currentLinkDefinitions = new LinkDefinitions();
-            ingestDefinitions(currentLinkDefinitions);
-            mapper.writeValue(new File(actualPath.toString()), currentLinkDefinitions);
+            linkSet = new LinkDefinitions();
+            ingestDefinitions(linkSet);
+            mapper.writeValue(new File(actualPath.toString()), linkSet);
             return;
         }
 
         try {
-            currentLinkDefinitions = mapper.readValue(new File(backingFilePath.toString()), LinkDefinitions.class);
-            ingestDefinitions(currentLinkDefinitions);
+            linkSet = mapper.readValue(new File(backingFilePath.toString()), LinkDefinitions.class);
+            ingestDefinitions(linkSet);
         } catch (IOException e) {
             String message = String.format("Cannot read %s: Exception is %s", backingFilePath, e);
             logger.severe(message);
-            if (currentLinkDefinitions == null ) {
-                currentLinkDefinitions = new LinkDefinitions();
-            }
         }
     }
 
-    private void update() throws Exception {
+    private boolean update() {
+        // Merge together the link definitions
+        LinkDefinitions localDefs = new LinkDefinitions();
+        ArrayList<LinkDefinition> definitionList = new ArrayList<LinkDefinition>();
+        definitionList.addAll(knownKeyLinks.values());
+        definitionList.addAll(knownAliasLinks.values());
+        localDefs.setDefinitions(definitionList);
+
+        // and write them out.
         ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(new File(backingFilePath.toString()), currentLinkDefinitions);
+        try {
+            mapper.writeValue(new File(backingFilePath.toString()), localDefs);
+        } catch (Exception e) {
+            logger.warning(String.format("Repository update failed: %s", e));
+            return false;
+        }
+        return true;
     }
 
     public boolean aliasExists(String alias) {
@@ -120,46 +128,34 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
         {
             return false; // duplicate alias.
         }
+
+        // this should never happen
         if (keyExists(linkDefinition.getKey())) {
             logger.warning(String.format("Duplicate key %s found.", linkDefinition.getKey()));
             return false;
         }
-        currentLinkDefinitions.definitions.add(linkDefinition);
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            if (StringUtils.isNotEmpty(this.testContents)) {
-                this.testContents = mapper.writeValueAsString(currentLinkDefinitions);
-            }
-            else {
-                mapper.writeValue(new File(backingFilePath.toString()), currentLinkDefinitions);
-            }
-            initialize();
-            return true;
-        } catch (IOException e) {
-            logger.severe(String.format("Cannot add LinkDefinition for %s.  Exception: %s", linkDefinition.getTargetUrl(), e));
-            currentLinkDefinitions.definitions.remove(currentLinkDefinitions.definitions.size());
-            return false;
+        if (StringUtils.isNotEmpty(linkDefinition.getAlias())) {
+            knownAliasLinks.put(linkDefinition.getAlias(),linkDefinition);
         }
+        else {
+            knownKeyLinks.put(linkDefinition.getKey(),linkDefinition);
+        }
+
+        boolean result = update();
+        if (!result)
+        {
+            logger.severe(String.format("Cannot add LinkDefinition for %s.", linkDefinition.getTargetUrl()));
+        }
+        return result;
     }
 
     public boolean deleteByKey(String key){
         if (keyExists(key))
         {
             synchronized (this) {
-                for (LinkDefinition ld : currentLinkDefinitions.definitions) {
-                    if (ld.getKey().equals(key)) {
-                        currentLinkDefinitions.definitions.remove(ld);
-                        break;
-                    }
-                }
-                try {
-                    update();
-                    initialize();
-                } catch (Exception e) {
-                    logger.warning(String.format("Reinitialization failed: %s", e));
-                }
+                knownKeyLinks.remove(key);
+                return update();
             }
-            return true;
         }
         return false;
     }
@@ -168,45 +164,24 @@ public class LinkDefinitionFlatFileRepository implements LinkDefinitionRepositor
         if (aliasExists(alias))
         {
             synchronized (this) {
-                for (LinkDefinition ld : currentLinkDefinitions.definitions) {
-                    if (ld.getAlias().equals(alias)) {
-                        currentLinkDefinitions.definitions.remove(ld);
-                        break;
-                    }
-                }
-                try {
-                    update();
-                    initialize();
-                } catch (Exception e) {
-                    logger.warning(String.format("Reinitialization failed: %s", e));
-                }
+                knownAliasLinks.remove(alias);
+                return update();
             }
-            return true;
         }
         return false;
     }
 
     public LinkDefinition getByKey(String key) {
-        return keyExists(key) ? knownKeyLinks.get(key) : null;
+        return knownKeyLinks.get(key);
     }
 
     public LinkDefinition getByAlias(String alias) {
-        return aliasExists(alias) ? knownAliasLinks.get(alias) : null;
+        return knownAliasLinks.get(alias);
     }
 
-    public void deleteAll() {
-        if (Files.exists(backingFilePath)) {
-            logger.info(String.format("Deleting backing file %s", backingFilePath));
-            try {
-                Files.delete(backingFilePath);
-            } catch (IOException e) {
-                logger.warning(String.format("Cannot delete %s", backingFilePath));
-            }
-            try {
-                initialize();
-            } catch (Exception e) {
-                logger.warning("Problem reinitializing.");
-            }
-        }
+    public synchronized void deleteAll() {
+        knownAliasLinks.clear();
+        knownKeyLinks.clear();
+        update();
     }
 }
